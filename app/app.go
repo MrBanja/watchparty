@@ -26,7 +26,9 @@ func New() *fiber.App {
 	app.Get("/ws/:id", websocket.New(srv.Room))
 
 	contentPath, err := filepath.Abs("./static/content")
-	zap.S().Panicf("Error getting absolute path for content: %v", err)
+	if err != nil {
+		zap.S().Panicf("Error getting absolute path for content: %v", err)
+	}
 	app.Static("/static/content", contentPath, fiber.Static{
 		Browse:   true,
 		Download: true,
