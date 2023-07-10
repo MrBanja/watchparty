@@ -47,7 +47,7 @@ func (r *Room) AddParticipant(conn *websocket.Conn) *Participant {
 }
 
 func (r *Room) RemoveParticipant(p *Participant) {
-	defer zap.S().Infof("Peer disconnected %s to room %s\n", p.conn.RemoteAddr(), r.Name)
+	defer zap.S().Infof("Peer disconnected %s from room %s\n", p.conn.RemoteAddr(), r.Name)
 	r.participantMu.Lock()
 	delete(r.participants, p)
 	r.participantMu.Unlock()
