@@ -1,25 +1,25 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>T</title>
+    <title>WatchParty</title>
     <link href="https://vjs.zencdn.net/7.11.4/video-js.css" rel="stylesheet"/>
 
     <script src="https://vjs.zencdn.net/7.11.4/video.min.js"></script>
     <script src="https://unpkg.com/@videojs/http-streaming@2.16.2/dist/videojs-http-streaming.js"></script>
 </head>
 <body>
-<video id="my-video" class="video-js" controls preload="auto" width="640"
-       height="264">
-    <source src="http://localhost/static/content/output.m3u8"
-            type="application/x-mpegURL">
+<video id="my-video" class="video-js" controls preload="auto" width="1280" height="720">
+    <source src="http://localhost:8000/static/content/output.m3u8" type="application/x-mpegURL">
+    <track src="http://localhost:8000/static/content/sub_en.vtt" kind="subtitles" srclang="en" label="English" default>
 </video>
 
 <button id="play">Play</button>
 <button id="pause">Pause</button>
+<button id="click">CLICK ME</button>
 
 <script>
     let player = videojs('my-video');
-    let ws = new WebSocket("ws://localhost/ws/party");
+    let ws = new WebSocket("ws://localhost:8000/ws/party");
 
     // Setting up button controls
     document.getElementById('play').addEventListener('click', function () {
@@ -29,14 +29,6 @@
     document.getElementById('pause').addEventListener('click', function () {
         ws.send("pause;" + player.currentTime());
     });
-
-    // player.on('play', function() {
-    //     ws.send("play;" + player.currentTime());
-    // });
-    //
-    // player.on('pause', function() {
-    //     ws.send("pause;" + player.currentTime());
-    // });
 
     //Triggered when the connection is opened
     ws.onopen = function (evt) {
