@@ -24,6 +24,7 @@ func New() *fiber.App {
 
 	app.Get("/", srv.Index)
 	app.Get("/ws/:id", websocket.New(srv.Room))
+	app.Get("/magnet", srv.GetMagnet)
 
 	contentPath, err := filepath.Abs("./static/content")
 	if err != nil {

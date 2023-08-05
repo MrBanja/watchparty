@@ -13,22 +13,29 @@
     <track src="http://localhost:8000/static/content/sub_en.vtt" kind="subtitles" srclang="en" label="English" default>
 </video>
 
-<button id="play">Play</button>
-<button id="pause">Pause</button>
-<button id="click">CLICK ME</button>
+<!--<button id="play">Play</button>-->
+<!--<button id="pause">Pause</button>-->
+<!--<button id="click">CLICK ME</button>-->
 
 <script>
     let player = videojs('my-video');
     let ws = new WebSocket("ws://localhost:8000/ws/party");
 
-    // Setting up button controls
-    document.getElementById('play').addEventListener('click', function () {
+    player.on('play', function() {
         ws.send("play;" + player.currentTime());
     });
 
-    document.getElementById('pause').addEventListener('click', function () {
+    player.on('pause', function() {
         ws.send("pause;" + player.currentTime());
     });
+    // Setting up button controls
+    // document.getElementById('play').addEventListener('click', function () {
+    //     ws.send("play;" + player.currentTime());
+    // });
+    //
+    // document.getElementById('pause').addEventListener('click', function () {
+    //     ws.send("pause;" + player.currentTime());
+    // });
 
     //Triggered when the connection is opened
     ws.onopen = function (evt) {
