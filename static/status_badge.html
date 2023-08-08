@@ -3,7 +3,7 @@
   <span class="badge text-bg-danger">{{.Text}}</span>
 </div>
 {{ else }}
-<div class="col align-self-end" hx-get="http://{{.Address}}/{{.ID}}/peer_status/{{.Port}}" hx-trigger="every 1s" hx-target="this" hx-swap="outerHTML">
+<div class="col align-self-end" hx-get="http://{{.Address}}/{{.ID}}/peer_status/{{.PartID}}" hx-trigger="every 1s" hx-target="this" hx-swap="outerHTML">
   <span class="badge text-bg-success">{{.Text}}</span>
 </div>
 {{ end }}

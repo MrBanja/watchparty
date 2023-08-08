@@ -3,16 +3,17 @@ package room
 import (
 	"github.com/gofiber/contrib/websocket"
 	"go.uber.org/zap"
-	"strings"
 	"sync"
 )
 
 type Participant struct {
 	conn *websocket.Conn
+	ID   string
 }
 
 func newParticipant(c *websocket.Conn) *Participant {
-	return &Participant{conn: c}
+	ID := c.Headers("X-Client-Id", "empty")
+	return &Participant{conn: c, ID: ID}
 }
 
 func (p *Participant) ReadMessage() ([]byte, error) {
@@ -39,11 +40,11 @@ func New(name string) *Room {
 }
 
 func (r *Room) AddParticipant(conn *websocket.Conn) *Participant {
-	defer zap.S().Infof("Peer connected %s to room %s\n", conn.RemoteAddr(), r.Name)
 	p := newParticipant(conn)
 	r.participantMu.Lock()
 	r.participants[p] = struct{}{}
 	r.participantMu.Unlock()
+	zap.S().Infof("Peer connected %s [%s] to room %s\n", conn.RemoteAddr(), p.ID, r.Name)
 	return p
 }
 
@@ -73,12 +74,11 @@ func (r *Room) BroadcastExcept(msg string, participant *Participant) {
 	zap.S().Infof("Broadcasted: %s to room %s\n", msg, r.Name)
 }
 
-func (r *Room) GetParticipantByPort(port string) *Participant {
+func (r *Room) GetParticipantByID(ID string) *Participant {
 	r.participantMu.RLock()
 	defer r.participantMu.RUnlock()
 	for p := range r.participants {
-		realPort := strings.Split(p.conn.RemoteAddr().String(), ":")[1]
-		if realPort == port {
+		if p.ID == ID {
 			return p
 		}
 	}

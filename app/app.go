@@ -34,7 +34,7 @@ func New(o Options) *fiber.App {
 
 	app.Get("/ws/:id", websocket.New(srv.Room))
 	app.Get("/magnet", srv.GetMagnet)
-	app.Get("/:id/peer_status/:port", srv.GetStatusBadge)
+	app.Get("/:id/peer_status/:partID", srv.GetStatusBadge)
 
 	return app
 }
