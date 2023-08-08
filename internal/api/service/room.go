@@ -45,7 +45,7 @@ func (s *Service) Room(c *websocket.Conn) {
 			}
 			break
 		}
-		zap.S().Infof("recv [%v]: %s", mt, msg)
+		zap.S().Infof("recv [%v]: %s: %s", mt, msg, c.RemoteAddr())
 
 		hub.BroadcastExcept(string(msg), participant)
 	}

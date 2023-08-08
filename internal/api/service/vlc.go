@@ -11,8 +11,11 @@ func (s *Service) GetStatusBadge(c *fiber.Ctx) error {
 	reqPort := c.Params("port")
 
 	s.mu.RLock()
-	room := s.hubs[roomName]
+	room, ok := s.hubs[roomName]
 	s.mu.RUnlock()
+	if !ok {
+		return c.Render("status_badge", fiber.Map{"Address": s.address, "IsLost": true, "Text": "Lost Connection", "ID": roomName, "Port": reqPort})
+	}
 	p := room.GetParticipantByPort(reqPort)
 	if p == nil {
 		return c.Render("status_badge", fiber.Map{"Address": s.address, "IsLost": true, "Text": "Lost Connection", "ID": roomName, "Port": reqPort})
