@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/caarlos0/env/v9"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -41,11 +42,15 @@ func init() {
 }
 
 func main() {
-	server := app.New()
-	serveGracefully(server)
+	o := app.Options{}
+	if err := env.Parse(&o); err != nil {
+		zap.S().Fatal(err)
+	}
+	server := app.New(o)
+	serveGracefully(server, o.LocalAddr)
 }
 
-func serveGracefully(app *fiber.App) {
+func serveGracefully(app *fiber.App, addr string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	errors := make(chan error, 2)
 	sigs := make(chan os.Signal, 1)
@@ -56,7 +61,7 @@ func serveGracefully(app *fiber.App) {
 	go func() {
 		defer wg.Done()
 		defer cancel()
-		if err := app.Listen("0.0.0.0:8000"); err != nil {
+		if err := app.Listen(addr); err != nil {
 			errors <- err
 		}
 	}()

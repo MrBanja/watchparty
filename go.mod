@@ -6,9 +6,13 @@ require github.com/gofiber/fiber/v2 v2.47.0
 
 require (
 	github.com/andybalholm/brotli v1.0.5 // indirect
+	github.com/caarlos0/env/v9 v9.0.0 // indirect
 	github.com/fasthttp/websocket v1.5.3 // indirect
 	github.com/gofiber/contrib/fiberzap v1.0.2 // indirect
 	github.com/gofiber/contrib/websocket v1.0.0 // indirect
+	github.com/gofiber/template v1.8.2 // indirect
+	github.com/gofiber/template/html/v2 v2.0.5 // indirect
+	github.com/gofiber/utils v1.1.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect

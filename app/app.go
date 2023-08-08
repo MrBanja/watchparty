@@ -4,35 +4,37 @@ import (
 	"github.com/gofiber/contrib/fiberzap"
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/template/html/v2"
 	"go.uber.org/zap"
-	"path/filepath"
 	"stream/internal/api/middlware"
 	"stream/internal/api/service"
 	"time"
 )
 
-func New() *fiber.App {
+type Options struct {
+	PublicAddr string `env:"PUBLIC_ADDR,required"`
+	LocalAddr  string `env:"LOCAL_ADDR" envDefault:":8000"`
+}
+
+func New(o Options) *fiber.App {
+	engine := html.New("./static", ".html")
+
 	app := fiber.New(fiber.Config{
 		ReadTimeout:  time.Second * 10,
 		WriteTimeout: time.Second * 10,
+		Views:        engine,
 	})
 
-	srv := service.New()
+	srv := service.New(o.PublicAddr)
 
+	app.Use(cors.New())
 	app.Use(fiberzap.New(fiberzap.Config{Logger: zap.L()}))
 	app.Use("/ws", middlware.UpgradeToWebsocket)
 
-	app.Get("/", srv.Index)
 	app.Get("/ws/:id", websocket.New(srv.Room))
 	app.Get("/magnet", srv.GetMagnet)
+	app.Get("/:id/peer_status/:port", srv.GetStatusBadge)
 
-	contentPath, err := filepath.Abs("./static/content")
-	if err != nil {
-		zap.S().Panicf("Error getting absolute path for content: %v", err)
-	}
-	app.Static("/static/content", contentPath, fiber.Static{
-		Browse:   true,
-		Download: true,
-	})
 	return app
 }

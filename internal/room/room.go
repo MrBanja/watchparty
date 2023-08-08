@@ -3,6 +3,7 @@ package room
 import (
 	"github.com/gofiber/contrib/websocket"
 	"go.uber.org/zap"
+	"strings"
 	"sync"
 )
 
@@ -70,4 +71,16 @@ func (r *Room) BroadcastExcept(msg string, participant *Participant) {
 		}
 	}
 	zap.S().Infof("Broadcasted: %s to room %s\n", msg, r.Name)
+}
+
+func (r *Room) GetParticipantByPort(port string) *Participant {
+	r.participantMu.RLock()
+	defer r.participantMu.RUnlock()
+	for p := range r.participants {
+		realPort := strings.Split(p.conn.RemoteAddr().String(), ":")[1]
+		if realPort == port {
+			return p
+		}
+	}
+	return nil
 }

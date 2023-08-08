@@ -15,10 +15,14 @@ func (s *Service) Room(c *websocket.Conn) {
 	)
 
 	roomName := c.Params("id")
+	s.mu.RLock()
 	hub, ok := s.hubs[roomName]
+	s.mu.RUnlock()
 	if !ok {
 		hub = room.New(roomName)
+		s.mu.Lock()
 		s.hubs[roomName] = hub
+		s.mu.Unlock()
 		zap.S().Infof("Room %s created", roomName)
 	}
 

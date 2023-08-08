@@ -1,13 +1,20 @@
 package service
 
-import "stream/internal/room"
+import (
+	"stream/internal/room"
+	"sync"
+)
 
 type Service struct {
+	address string
+
+	mu   sync.RWMutex
 	hubs map[string]*room.Room
 }
 
-func New() *Service {
+func New(address string) *Service {
 	return &Service{
-		hubs: make(map[string]*room.Room),
+		address: address,
+		hubs:    make(map[string]*room.Room),
 	}
 }
