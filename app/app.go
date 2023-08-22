@@ -1,15 +1,22 @@
 package app
 
 import (
-	"github.com/gofiber/contrib/fiberzap"
-	"github.com/gofiber/contrib/websocket"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/template/html/v2"
-	"go.uber.org/zap"
-	"stream/internal/api/middlware"
-	"stream/internal/api/service"
+	"context"
+	"net"
+	"net/http"
 	"time"
+
+	"github.com/mrbanja/watchparty/party"
+
+	"github.com/gorilla/mux"
+	"go.uber.org/zap"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
+
+	"github.com/mrbanja/watchparty/api/party_grpc"
+	"github.com/mrbanja/watchparty/api/ssr"
+	"github.com/mrbanja/watchparty/protocol/gen-go/protocolconnect"
+	"github.com/mrbanja/watchparty/tools/http_server"
 )
 
 type Options struct {
@@ -17,24 +24,38 @@ type Options struct {
 	LocalAddr  string `env:"LOCAL_ADDR" envDefault:":8000"`
 }
 
-func New(o Options) *fiber.App {
-	engine := html.New("./static", ".html")
+func Run(ctx context.Context, opt Options) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-	app := fiber.New(fiber.Config{
-		ReadTimeout:  time.Second * 10,
-		WriteTimeout: time.Second * 10,
-		Views:        engine,
-	})
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		return err
+	}
+	logger = logger.Named("app")
 
-	srv := service.New(o.PublicAddr)
+	prt := party.New(logger)
+	ssrSRV := ssr.New(prt, opt.PublicAddr, logger)
+	partyGRPC := party_grpc.New(prt, logger)
 
-	app.Use(cors.New())
-	app.Use(fiberzap.New(fiberzap.Config{Logger: zap.L()}))
-	app.Use("/ws", middlware.UpgradeToWebsocket)
+	handler := mux.NewRouter()
+	handler.Handle(protocolconnect.NewGameServiceHandler(partyGRPC))
+	handler.HandleFunc("/{room_id}/peer_status/{participant_id}", ssrSRV.GetStatusBadge).Methods(http.MethodGet)
 
-	app.Get("/ws/:id", websocket.New(srv.Room))
-	app.Get("/magnet", srv.GetMagnet)
-	app.Get("/:id/peer_status/:partID", srv.GetStatusBadge)
+	server := &http.Server{
+		Addr: opt.PublicAddr,
+		BaseContext: func(listener net.Listener) context.Context {
+			return ctx
+		},
+		Handler: h2c.NewHandler(handler, &http2.Server{}),
+	}
 
-	return app
+	logger.Info("[*] Http server started", zap.String("Pub Addr", opt.PublicAddr), zap.String("Local Addr", opt.LocalAddr))
+	if err = http_server.Serve(ctx, server, 10*time.Second, func(server *http.Server) error {
+		return server.ListenAndServe()
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }
