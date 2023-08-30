@@ -31,5 +31,5 @@ func (s *Service) MustBuildTemplate() {
 type m map[string]interface{}
 
 const (
-	statusBadgeTmpl string = "status_badge"
+	statusBadgeTmpl string = "status_badge.html"
 )

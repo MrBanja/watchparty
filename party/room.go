@@ -1,9 +1,12 @@
 package party
 
 import (
+	"context"
 	"sync"
 
-	gen "github.com/mrbanja/watchparty/protocol/gen-go"
+	"github.com/mrbanja/watchparty/tools/logging"
+
+	gen "github.com/mrbanja/watchparty-proto/gen-go"
 
 	"github.com/bufbuild/connect-go"
 	"go.uber.org/zap"
@@ -26,27 +29,28 @@ func NewRoom(name string, logger *zap.Logger) *Room {
 	}
 }
 
-func (r *Room) AddParticipant(c *connect.BidiStream[gen.RoomRequest, gen.RoomResponse]) *Participant {
+func (r *Room) AddParticipant(ctx context.Context, c *connect.BidiStream[gen.RoomRequest, gen.RoomResponse]) *Participant {
 	p := newParticipant(c)
 	r.participantMu.Lock()
 	r.participants[p] = struct{}{}
 	r.participantMu.Unlock()
-	r.logger.Info("Peer connected to room", zap.String("Addr", p.peer.Addr), zap.String("Participant ID", p.ID))
+	logging.WithTrace(r.logger, ctx).Info("Peer connected to room", zap.String("Addr", p.peer.Addr), zap.String("Participant ID", p.ID))
 	return p
 }
 
-func (r *Room) RemoveParticipant(p *Participant) {
-	defer r.logger.Info("Peer disconnected from the room", zap.String("Addr", p.peer.Addr))
+func (r *Room) RemoveParticipant(ctx context.Context, p *Participant) {
+	defer logging.WithTrace(r.logger, ctx).Info("Peer disconnected from the room", zap.String("Addr", p.peer.Addr))
 	r.participantMu.Lock()
 	delete(r.participants, p)
 	r.participantMu.Unlock()
 }
 
-func (r *Room) Broadcast(msg *gen.RoomResponse) {
-	r.BroadcastExcept(msg, nil)
+func (r *Room) Broadcast(ctx context.Context, msg *gen.RoomResponse) {
+	r.BroadcastExcept(ctx, msg, nil)
 }
 
-func (r *Room) BroadcastExcept(msg *gen.RoomResponse, participant *Participant) {
+func (r *Room) BroadcastExcept(ctx context.Context, msg *gen.RoomResponse, participant *Participant) {
+	logger := logging.WithTrace(r.logger, ctx)
 	r.participantMu.RLock()
 	defer r.participantMu.RUnlock()
 
@@ -55,10 +59,10 @@ func (r *Room) BroadcastExcept(msg *gen.RoomResponse, participant *Participant) 
 			continue
 		}
 		if err := p.conn.Send(msg); err != nil {
-			r.logger.Error("Error sending to peer", zap.Error(err), zap.String("Peer ID", p.ID))
+			logger.Error("Error sending to peer", zap.Error(err), zap.String("Peer ID", p.ID))
 		}
 	}
-	r.logger.Info("Broadcast to the room", zap.Any("MSG", msg))
+	logger.Info("Broadcast to the room", zap.Any("MSG", msg))
 }
 
 func (r *Room) GetParticipantByID(ID string) *Participant {

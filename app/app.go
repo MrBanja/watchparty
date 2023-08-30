@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/mrbanja/watchparty/tools/logging"
+
 	"github.com/mrbanja/watchparty/party"
 
 	"github.com/gorilla/mux"
@@ -13,9 +15,9 @@ import (
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
+	"github.com/mrbanja/watchparty-proto/gen-go/protocolconnect"
 	"github.com/mrbanja/watchparty/api/party_grpc"
 	"github.com/mrbanja/watchparty/api/ssr"
-	"github.com/mrbanja/watchparty/protocol/gen-go/protocolconnect"
 	"github.com/mrbanja/watchparty/tools/http_server"
 )
 
@@ -28,7 +30,9 @@ func Run(ctx context.Context, opt Options) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	logger, err := zap.NewDevelopment()
+	c := zap.NewDevelopmentConfig()
+	c.Development = false
+	logger, err := c.Build()
 	if err != nil {
 		return err
 	}
@@ -36,11 +40,16 @@ func Run(ctx context.Context, opt Options) error {
 
 	prt := party.New(logger)
 	ssrSRV := ssr.New(prt, opt.PublicAddr, logger)
+	ssrSRV.MustBuildTemplate()
 	partyGRPC := party_grpc.New(prt, logger)
 
-	handler := mux.NewRouter()
-	handler.Handle(protocolconnect.NewGameServiceHandler(partyGRPC))
-	handler.HandleFunc("/{room_id}/peer_status/{participant_id}", ssrSRV.GetStatusBadge).Methods(http.MethodGet)
+	api := mux.NewRouter()
+	api.HandleFunc("/{room_id}/peer_status/{participant_id}", ssrSRV.GetStatusBadge).Methods(http.MethodGet)
+
+	prefix, partyGRPCHandler := protocolconnect.NewPartyServiceHandler(partyGRPC)
+	api.PathPrefix(prefix).Handler(partyGRPCHandler)
+
+	handler := logging.Middleware(api, logger)
 
 	server := &http.Server{
 		Addr: opt.PublicAddr,

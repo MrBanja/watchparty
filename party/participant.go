@@ -2,7 +2,7 @@ package party
 
 import (
 	"github.com/bufbuild/connect-go"
-	gen "github.com/mrbanja/watchparty/protocol/gen-go"
+	gen "github.com/mrbanja/watchparty-proto/gen-go"
 )
 
 type Participant struct {
